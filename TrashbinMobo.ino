@@ -75,42 +75,50 @@ void loop() {
   Serial.println(IR2State);
   Serial.println(IR3State);
 
-  // Check if IR1State is 0 then Trash has been Inserted and will proceed into segregation
-  while (IR1State == 0){
-    // Show Message that Trash has been Inserted
-    ShowTrashInsertedMessage();
-    // initialize and read Proximity Sensor state variable
-    int ProximitySensorState = digitalRead(ProximitySensor);
-    // Print Proximity Sensor state for testing
-    Serial.println(ProximitySensorState);
-    
-    // Check if Proximity Sensor not sensing anything meaning transparent pet bottle has been inserted 
-    if (ProximitySensorState == 1){
-      // Show message that pet bottle has been inserted
-      ShowPetBottleHasBeenDetected();
-      // Show Segragating message in the LCD
-      ShowSegregatingMessage();
-      // Segregate the pet bottles by moving the Motors in Counter-Clockwise Direction (LEFT SIDE TRASHBIN)
-      SegregatePetBottles();
-      // Stop the Motors from moving.
-      StopSegratation();
-      // Show Segregation has been completed in the LCD
-      ShowSegregationCompletedMessage();
-      // Exit the while loop;
-      break;
-    }else{ // Proximity Sensor is sensing data meaning random trash has been inserted
-      // Show message that pet bottle has been inserted
-      ShowRandomTrashHasbeenDetected();
-      // Show Segragating message in the LCD
-      ShowSegregatingMessage();
-      // Segregate the random by moving the Motors in Clockwise Direction (RIGHT SIDE TRASHBIN)
-      SegregateRandomTrash();
-      // Stop the Motors from moving.
-      StopSegratation();
-      // Show Segregation has been completed in the LCD
-      ShowSegregationCompletedMessage();
-      // Exit the while loop;
-      break;
+  // Check if Pet Bottle and Random Trash Trash bin is Full or not
+  if (IR2State != 0 && IR3State !=0){ 
+    // Check if IR1State is 0 then Trash has been Inserted and will proceed into segregation
+    while (IR1State == 0){ // IR1State is = 0
+      // Show Message that Trash has been Inserted
+      ShowTrashInsertedMessage();
+      // initialize and read Proximity Sensor state variable
+      int ProximitySensorState = digitalRead(ProximitySensor);
+      // Print Proximity Sensor state for testing
+      Serial.println(ProximitySensorState);
+      
+      // Check if Proximity Sensor not sensing anything meaning transparent pet bottle has been inserted 
+      if (ProximitySensorState == 1){
+        // Show message that pet bottle has been inserted
+        ShowPetBottleHasBeenDetected();
+        // Show Segragating message in the LCD
+        ShowSegregatingMessage();
+        // Segregate the pet bottles by moving the Motors in Counter-Clockwise Direction (LEFT SIDE TRASHBIN)
+        SegregatePetBottles();
+        // Stop the Motors from moving.
+        StopSegratation();
+        // Show Segregation has been completed in the LCD
+        ShowSegregationCompletedMessage();
+        // Exit the while loop;
+        break;
+      }else{ // Proximity Sensor is sensing data meaning random trash has been inserted
+        // Show message that pet bottle has been inserted
+        ShowRandomTrashHasbeenDetected();
+        // Show Segragating message in the LCD
+        ShowSegregatingMessage();
+        // Segregate the random by moving the Motors in Clockwise Direction (RIGHT SIDE TRASHBIN)
+        SegregateRandomTrash();
+        // Stop the Motors from moving.
+        StopSegratation();
+        // Show Segregation has been completed in the LCD
+        ShowSegregationCompletedMessage();
+        // Exit the while loop;
+        break;
+      }
+    }
+  }else{ // Pet bottle or Random Trash Trashbin or both is full
+    if (IR1State == 0){
+      // Display Segratation will not continue please empty trashbin immediately message
+      ShowSegregationWillNotContinueMessage();
     }
   }
 
@@ -120,7 +128,7 @@ void loop() {
     ShowTrashcanForBottlesAreFull();
   }else if (IR3State == 0 && IR2State != 0 ){ // If Trashbin for random trash are full and Pet bottles is not full (RIGHT TRASHBIN)
     // Show Random Trash Trash Bin are full in LCD
-    ShowTrashcanForRandomTrashAreFull();
+    ShowTrashcanForRandomTrashAreFull();    
   }else if (IR2State == 0 && IR3State == 0 ) { // If both trash bin for random trash and pet bottles are full. (BOTH TRASHBIN)
     // Show Both Trashbins are full in the LCD
     ShowBothTrashcanIsFull();
@@ -222,6 +230,22 @@ void ShowSegregationCompletedMessage(){
   lcd.print("Segratation");      
   lcd.setCursor(3, 1);        
   lcd.print("Completed"); 
+  delay(2000);
+}
+
+// void function for showing the Segregation will not continue please empty trashbin Message in the LCD
+void ShowSegregationWillNotContinueMessage(){
+  lcd.clear();
+  lcd.setCursor(0, 0);         
+  lcd.print("Segratation will");      
+  lcd.setCursor(2, 1);        
+  lcd.print("not continue"); 
+  delay(2000);
+  lcd.clear();
+  lcd.setCursor(0, 0);         
+  lcd.print("Please empty the");      
+  lcd.setCursor(0, 1);        
+  lcd.print("bin immediately"); 
   delay(2000);
 }
 
