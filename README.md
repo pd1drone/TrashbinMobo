@@ -14,7 +14,7 @@ Uses motor for actuating panels and conveyor belt
 git clone https://github.com/pd1drone/TrashbinMobo
 ```
 2. Get the LiquidCrystal_I2C folder and copy it to the folder libraries it is located the arduino codes has been save it will have a libraries folder. The default folder of arduino is in /Documents/Arduino/libraries/
-![Libraries-Directory](Libraries-Directory.PNG)
+![Libraries-Directory](Libraries-Directory.png)
 
 3. To adjust the duration of movement of the motors go to the TrashbinMobo.ino file Line 228-246, and change the delay value.
 ```
