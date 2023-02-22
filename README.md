@@ -1,10 +1,10 @@
 # TrashbinMobo
-Segregate bottles from random trash
-Display the process and the status of the bins on the LCD
-Detects random trash
-Detects clear bottles only
-Uses motor for actuating panels and conveyor belt
-1 at a time trash segregator
+Segregate bottles from random trash  
+Display the process and the status of the bins on the LCD  
+Detects random trash  
+Detects clear bottles only  
+Uses motor for actuating panels and conveyor belt  
+1 at a time trash segregator  
 
 
 
