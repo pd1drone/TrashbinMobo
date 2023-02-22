@@ -1,4 +1,4 @@
-# TrashBinMobo
+# TrashbinMobo
 Segregate bottles from random trash
 Display the process and the status of the bins on the LCD
 Detects random trash
@@ -8,7 +8,7 @@ Uses motor for actuating panels and conveyor belt
 
 
 
-## Steps to Setup TrashBinMobo
+## Steps to Setup TrashbinMobo
 1. Clone this repository 
 ```
 git clone https://github.com/pd1drone/TrashbinMobo
