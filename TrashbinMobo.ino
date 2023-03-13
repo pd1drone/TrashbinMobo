@@ -113,7 +113,7 @@ void loop() {
       ShowRandomTrashHasbeenDetected();
 
       int IR3State = digitalRead(IR3);
-      if (IR3State == 0){
+      while (IR3State == 0){
         ShowTrashcanForRandomTrashAreFull();
         int IR3State = digitalRead(IR3);
         if (IR3State == 1){
