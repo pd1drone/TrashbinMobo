@@ -1,15 +1,30 @@
 /*
 PIN CONFIGURATIONS:
-MOTOR DRIVER OUT1 = 9
-MOTOR DRIVER OUT2 = 6
-MOTOR DRIVER OUT3 = 5
-MOTOR DRIVER OUT4 = 3
+MOTOR DRIVER OUT1 = 5
+MOTOR DRIVER OUT2 = 3
 
 IR SENSOR 1 (SENSOR FOR INSERTED TRASH) = 11 
-IR SENSOR 2 (SENSOR FOR PET BOTTLE TRASHBIN) = 12
-IR SENSOR 3 (SENSOR FOR RANDOM TRASH TRASHBIN) = 13
+
+left ultrasonic sensor
+trig pin = 4
+echo pin = 6
+
+right ultrasonic sensor
+trig pin = 7
+echo pin = 8
 
 PROXIMITY SENSOR = 10
+
+magneticdoor = 2
+
+servomotor sorter = 9
+
+pushbutton switch = 12
+
+buzzer = 13
+
+LED RIGHT (Pet bottle trashcan) = A0
+LED LEFT (Random trash trashcan) = A1
 
 LCD VIN = 5V
 LCD GND = GND
@@ -17,31 +32,57 @@ LCD SDA = A4
 LCD SCL = A5
 
 ACTUAL PROTOTYPE TRASHBIN CONFIGURATION:
-LEFT TRASHBIN = PET BOTTLE TRASHBIN
-RIGHT TRASHBIN = RANDOM TRASH TRASHBIN
+LEFT TRASHBIN = RANDOM TRASH TRASHBIN
+RIGHT TRASHBIN = PET BOTTLE TRASHBIN
 
 MOVEMENT OF MOTORS CONFIGURATION:
-CLOCKWISE = RIGHT DIRECTION
-COUNTER-CLOCKWISE = LEFT DIRECTION
+CLOCKWISE = FORWARD DIRECTION
+COUNTER-CLOCKWISE = REVERSE DIRECTION
 
 */
 
 #include <LiquidCrystal_I2C.h> // Library for LCD
+#include <Servo.h>
 
-// Motor A
-const int motorAPin1  = 9; 
-const int motorAPin2  = 6; 
-// Motor B
-const int motorBPin1  = 5; 
-const int motorBPin2  = 3;  
+// Motor Separator
+const int motorAPin1  = 5; 
+const int motorAPin2  = 3;
+
+// Magnetic door
+const int MagneticDoor = 2;
 
 // Proximity Sensor
 const int ProximitySensor = 10;
 
 // IR Sensors
 const int IR1 = 11;
-const int IR2 = 12;
-const int IR3 = 13;
+
+// left ultrasonic sensor for trashcan
+const int LeftTrigPin = 4;
+const int LeftEchoPin = 6;
+
+// right ultrasonic sensor for trashcan
+const int RightTrigPin = 7;
+const int RightEchoPin = 8;
+
+const int PushButtonSwitch = 12;
+
+const int buzzer = 13;
+
+
+long Leftduration;
+long Rightduration;
+
+float left = 0.0;
+float right = 0.0;
+
+
+Servo servoSorter;
+
+int PetBottlePosition = 90;
+int RandomTrashPosition = 0;
+
+bool IsTrashBeingInserted = false;
 
 // I2C address 0x27, 16 column and 2 rows
 LiquidCrystal_I2C lcd(0x27, 16, 2); 
@@ -53,150 +94,144 @@ void setup() {
   lcd.backlight(); // open lcd backlight
 
  // Setup of PinModes for Motors, IR's, and Proximity Sensor
-  pinMode(motorAPin1, OUTPUT);
-  pinMode(motorAPin2, OUTPUT);
-  pinMode(motorBPin1, OUTPUT);
-  pinMode(motorBPin2, OUTPUT);
-  pinMode(ProximitySensor, INPUT);
-  pinMode(IR1, INPUT);
-  pinMode(IR2, INPUT);
-  pinMode(IR3, INPUT);
+  pinMode(motorAPin1, OUTPUT); // motor pin 1 - 5
+  pinMode(motorAPin2, OUTPUT); // motor pin 2 -  3
+  pinMode(ProximitySensor, INPUT); // proximity sensor - 10
+  pinMode(IR1, INPUT); // ir sensor = 11
+  pinMode(MagneticDoor, INPUT); // magneticdoor - 2
+  pinMode(LeftTrigPin, OUTPUT);  // left trig pin = 4
+  pinMode(LeftEchoPin, INPUT);  // left echo pin = 6
+  pinMode(RightTrigPin, OUTPUT);  // right trig pin = 7
+  pinMode(RightEchoPin, INPUT);  // right echo pin = 8
+  pinMode(A0,OUTPUT); // right led A0
+  pinMode(A1,OUTPUT); // left led A1
+  pinMode(buzzer, OUTPUT); // Set buzzer - pin 9 as an output
+  pinMode(PushButtonSwitch, INPUT_PULLUP); // push button 
 
+  servoSorter.attach(9); // servo motor = 9
+  servoSorter.write(PetBottlePosition); 
 }
 
 void loop() {
-  // Initialize and read IR Sensor State variables
-  int IR1State = digitalRead(IR1); 
-  int IR2State = digitalRead(IR2); 
-  int IR3State = digitalRead(IR3); 
+  int counter = 0;
+  int MagneticDoorValue = digitalRead(MagneticDoor);
+  LeftUltrasonicSensor();
+  RightUltrasonicSensor();
 
-  // Print IR Sensor states for testing 
-  Serial.println(IR1State);
-  Serial.println(IR2State);
-  Serial.println(IR3State);
+  if (right <= 12.0 && left <= 12.0){
+    while(true){
+      ShowBothTrashcanIsFull();
+      int PushBtnValue = digitalRead(PushButtonSwitch);
+      if(PushBtnValue == 0){
+        digitalWrite(A0,LOW);
+        digitalWrite(A1,LOW);
+        noTone(buzzer); 
+        break;
+      }
+    }
+  }else if (right <= 12.0){
+    while(true){
+      ShowTrashcanForBottlesAreFull();
+      int PushBtnValue = digitalRead(PushButtonSwitch);
+      if(PushBtnValue == 0){
+        digitalWrite(A0,LOW);
+        noTone(buzzer); 
+        break;
+      }
+    }
+  }else if (left <= 12.0){
+    while(true){
+      ShowTrashcanForRandomTrashAreFull();
+      int PushBtnValue = digitalRead(PushButtonSwitch);
+      if(PushBtnValue == 0){
+        digitalWrite(A1,LOW);
+        noTone(buzzer); 
+        break;
+      }
+    }
+  }else{
+    ShowDefaultLCDMessage();
+  }
 
-  // Check if IR1State is 0 then Trash has been Inserted and will proceed into segregation
-  while (IR1State == 0){
+  if (MagneticDoorValue == 0){
+    IsTrashBeingInserted = true;
     // Show Message that Trash has been Inserted
     ShowTrashInsertedMessage();
+  }
+
+
+  MagneticDoorValue = digitalRead(MagneticDoor);
+
+  while (IsTrashBeingInserted && MagneticDoorValue == 1){
+    ReverseMotor();
+    delay(30000);
+
+    int IR1State = digitalRead(IR1); 
+    while (IR1State != 0){
+      IR1State = digitalRead(IR1); 
+      ForwardMotor();
+      delay(200); // change this to change how much 
+      StopMotor();
+      counter++;
+      if (counter == 50){ // change this to stop motor.
+        break;
+      }
+    }
+
+    // this means that there is no more trash to be separated
+    if (counter == 50){
+      ShowSegregationCompletedMessage();
+      IsTrashBeingInserted = false;
+      break;
+    }else{
+      counter = 0;
+    }
+
     // initialize and read Proximity Sensor state variable
     int ProximitySensorState = digitalRead(ProximitySensor);
     // Print Proximity Sensor state for testing
     Serial.println(ProximitySensorState);
-    
-    // Check if Proximity Sensor not sensing anything meaning transparent pet bottle has been inserted 
     if (ProximitySensorState == 1){
       // Show message that pet bottle has been inserted
       ShowPetBottleHasBeenDetected();
-
-      int IR2State = digitalRead(IR2);
-      while (IR2State == 0){
-        ShowTrashcanForBottlesAreFull();
-        int IR2State = digitalRead(IR2);
-        if (IR2State == 1){
-          break;
-        }
-      }
-
       // Show Segragating message in the LCD
       ShowSegregatingMessage();
       // Segregate the pet bottles by moving the Motors in Counter-Clockwise Direction (LEFT SIDE TRASHBIN)
       SegregatePetBottles();
-      // Stop the Motors from moving.
-      StopSegratation();
-      // Show Segregation has been completed in the LCD
-      ShowSegregationCompletedMessage();
-      // Exit the while loop;
-      break;
-    }else{ // Proximity Sensor is sensing data meaning random trash has been inserted
+    }else{
       // Show message that pet bottle has been inserted
       ShowRandomTrashHasbeenDetected();
-
-      int IR3State = digitalRead(IR3);
-      while (IR3State == 0){
-        ShowTrashcanForRandomTrashAreFull();
-        int IR3State = digitalRead(IR3);
-        if (IR3State == 1){
-          break;
-        }
-      }
-
       // Show Segragating message in the LCD
       ShowSegregatingMessage();
       // Segregate the random by moving the Motors in Clockwise Direction (RIGHT SIDE TRASHBIN)
       SegregateRandomTrash();
-      // Stop the Motors from moving.
-      StopSegratation();
-      // Show Segregation has been completed in the LCD
-      ShowSegregationCompletedMessage();
-      // Exit the while loop;
-      break;
     }
-  }
 
-  // // Check if Trash Bins are full or not
-  // if (IR2State == 0 && IR3State != 0 ){ // If Trashbin for Pet bottles are full and Random Trash is not full (LEFT TRASHBIN)
-  //   // Show Pet Bottles Trash Bin are full in LCD
-  //   ShowTrashcanForBottlesAreFull();
-  // }else if (IR3State == 0 && IR2State != 0 ){ // If Trashbin for random trash are full and Pet bottles is not full (RIGHT TRASHBIN)
-  //   // Show Random Trash Trash Bin are full in LCD
-  //   ShowTrashcanForRandomTrashAreFull();
-  // }else 
-  if (IR2State == 0 && IR3State == 0 ) { // If both trash bin for random trash and pet bottles are full. (BOTH TRASHBIN)
-    // Show Both Trashbins are full in the LCD
-    ShowBothTrashcanIsFull();
-  }else{
-    // Show Default Message of LCD ("AUTOMATED BOTTLE SEGRAGATOR" and "Please Insert Trash" Message)
-    ShowDefaultLCDMessage();
   }
 
 }
 
-// void function for Showing Default Message in the LCD
-void ShowDefaultLCDMessage(){
-  lcd.clear(); 
-  lcd.setCursor(0, 0); 
-  lcd.print("AUTOMATED BOTTLE"); 
-  lcd.setCursor(3, 1); 
-  lcd.print("SEGREGATOR"); 
-  delay(2000);
+void LeftUltrasonicSensor() {
+  digitalWrite(LeftTrigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(LeftTrigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(LeftTrigPin, LOW);
+  Leftduration = pulseIn(LeftEchoPin, HIGH);
+  float leftdata = Leftduration * 0.0133 / 2;
+  left = leftdata;
 
-  lcd.clear();                 
-  lcd.setCursor(1, 0);         
-  lcd.print("Please insert");      
-  lcd.setCursor(5, 1);        
-  lcd.print("Trash!"); 
-  delay(2000); 
 }
 
-// void function for Showing Pet Bottle Trash bin is full Message in the LCD
-void ShowTrashcanForBottlesAreFull(){
-  lcd.clear();
-  lcd.setCursor(3, 0);         
-  lcd.print("Pet bottle");      
-  lcd.setCursor(2, 1);        
-  lcd.print("bin is full"); 
-  delay(1000);
-}
-
-// void function for Showing Random Trash Trashbin is full Message in the LCD
-void ShowTrashcanForRandomTrashAreFull(){
-  lcd.clear();
-  lcd.setCursor(2, 0);         
-  lcd.print("Random trash");      
-  lcd.setCursor(2, 1);        
-  lcd.print("bin is full"); 
-  delay(1000);
-}
-
-// void function for Showing Both Trashbins are full Message in the LCD
-void ShowBothTrashcanIsFull(){
-  lcd.clear();
-  lcd.setCursor(3, 0);         
-  lcd.print("Both Trash");      
-  lcd.setCursor(2, 1);        
-  lcd.print("bin is full"); 
-  delay(1000);
+void RightUltrasonicSensor() {
+  digitalWrite(RightTrigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(RightTrigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(RightTrigPin, LOW);
+  Rightduration = pulseIn(RightEchoPin, HIGH);
+  float rightdata = Rightduration * 0.0133 / 2;
+  right = rightdata;
 }
 
 // void function for showing trash has been inserted Message in the LCD
@@ -246,31 +281,124 @@ void ShowSegregationCompletedMessage(){
   delay(2000);
 }
 
+// void function for showing the Segregation will not continue please empty trashbin Message in the LCD
+void ShowSegregationWillNotContinueMessage(){
+  lcd.clear();
+  lcd.setCursor(0, 0);         
+  lcd.print("Segratation will");      
+  lcd.setCursor(2, 1);        
+  lcd.print("not continue"); 
+  delay(2000);
+  lcd.clear();
+  lcd.setCursor(0, 0);         
+  lcd.print("Please empty the");      
+  lcd.setCursor(0, 1);        
+  lcd.print("bin immediately"); 
+  delay(2000);
+}
+
 // void function that will move both motors in the clockwise direction (RIGHT TRASHBIN)
 void SegregateRandomTrash(){
-  //This code  will turn Motor A and B clockwise for 5 sec.
+  servoSorter.write(RandomTrashPosition);
+  delay(1000);
+  //This code  will turn Motor A and B clockwise for 3 sec.
   analogWrite(motorAPin1, 255);
   analogWrite(motorAPin2, 0);
-  analogWrite(motorBPin1, 255);
-  analogWrite(motorBPin2, 0);
-  delay(5000); 
+  delay(3000); // change this to 
+  // This code will stop motor A and Motor B
+  analogWrite(motorAPin1, 0);
+  analogWrite(motorAPin2, 0);
 }
 
 // void function that will move both motors in the counter-clockwise direction (LEFT TRASHBIN)
 void SegregatePetBottles(){
-  //This code will turn Motor A and B counter-clockwise for 5 sec.
-  analogWrite(motorAPin1, 0);
-  analogWrite(motorAPin2, 255);
-  analogWrite(motorBPin1, 0);
-  analogWrite(motorBPin2, 255);
-  delay(5000);
-}
-
-// void function that will stop both motors after moving in counter-clockwise or clockwise direction.
-void StopSegratation(){
+  servoSorter.write(PetBottlePosition);
+  delay(1000);
+  //This code  will turn Motor A and B clockwise for 3 sec.
+  analogWrite(motorAPin1, 255);
+  analogWrite(motorAPin2, 0);
+  delay(3000); // change this to 
   // This code will stop motor A and Motor B
   analogWrite(motorAPin1, 0);
   analogWrite(motorAPin2, 0);
-  analogWrite(motorBPin1, 0);
-  analogWrite(motorBPin2, 0);
+}
+
+// void function for Showing Default Message in the LCD
+void ShowDefaultLCDMessage(){
+  lcd.clear(); 
+  lcd.setCursor(0, 0); 
+  lcd.print("AUTOMATED BOTTLE"); 
+  lcd.setCursor(3, 1); 
+  lcd.print("SEGREGATOR"); 
+  delay(500);
+
+  lcd.clear();                 
+  lcd.setCursor(1, 0);         
+  lcd.print("Please insert");      
+  lcd.setCursor(5, 1);        
+  lcd.print("Trash!"); 
+  delay(500); 
+}
+
+// void function for Showing Pet Bottle Trash bin is full Message in the LCD
+void ShowTrashcanForBottlesAreFull(){
+  lcd.clear();
+  lcd.setCursor(3, 0);         
+  lcd.print("Pet bottle");      
+  lcd.setCursor(2, 1);        
+  lcd.print("bin is full"); 
+  digitalWrite(A0,HIGH);
+  tone(buzzer,1000);
+  delay(1000);
+  digitalWrite(A0,LOW);
+  noTone(buzzer); 
+  delay(1000);
+}
+
+// void function for Showing Random Trash Trashbin is full Message in the LCD
+void ShowTrashcanForRandomTrashAreFull(){
+  lcd.clear();
+  lcd.setCursor(2, 0);         
+  lcd.print("Random trash");      
+  lcd.setCursor(2, 1);        
+  lcd.print("bin is full"); 
+  digitalWrite(A1,HIGH);
+  tone(buzzer,1000);
+  delay(1000);
+  digitalWrite(A1,LOW);
+  noTone(buzzer); 
+  delay(1000);
+}
+
+// void function for Showing Both Trashbins are full Message in the LCD
+void ShowBothTrashcanIsFull(){
+  lcd.clear();
+  lcd.setCursor(3, 0);         
+  lcd.print("Both Trash");      
+  lcd.setCursor(2, 1);        
+  lcd.print("bin is full");
+  digitalWrite(A0,HIGH);
+  digitalWrite(A1,HIGH);
+  tone(buzzer,1000);
+  delay(1000);
+  digitalWrite(A0,LOW);
+  digitalWrite(A1,LOW);
+  noTone(buzzer); 
+  delay(1000);
+}
+
+void ReverseMotor(){
+  analogWrite(motorAPin1, 0);
+  analogWrite(motorAPin2, 255);
+}
+
+void ForwardMotor(){
+  analogWrite(motorAPin1, 255);
+  analogWrite(motorAPin2, 0);
+}
+
+void StopMotor(){
+  // This code will stop motor A and Motor B
+  analogWrite(motorAPin1, 0);
+  analogWrite(motorAPin2, 0);
 }
