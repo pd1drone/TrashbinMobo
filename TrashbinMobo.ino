@@ -79,8 +79,8 @@ float right = 0.0;
 
 Servo servoSorter;
 
-int PetBottlePosition = 90;
-int RandomTrashPosition = 0;
+//int PetBottlePosition = 90;
+//int RandomTrashPosition = 0;
 
 bool IsTrashBeingInserted = false;
 
