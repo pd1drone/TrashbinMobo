@@ -108,8 +108,8 @@ void setup() {
   pinMode(buzzer, OUTPUT); // Set buzzer - pin 9 as an output
   pinMode(PushButtonSwitch, INPUT_PULLUP); // push button 
 
-  servoSorter.attach(9); // servo motor = 9
-  servoSorter.write(PetBottlePosition); 
+  //servoSorter.attach(9); // servo motor = 9
+  //servoSorter.write(PetBottlePosition); 
 }
 
 void loop() {
@@ -299,8 +299,10 @@ void ShowSegregationWillNotContinueMessage(){
 
 // void function that will move both motors in the clockwise direction (RIGHT TRASHBIN)
 void SegregateRandomTrash(){
-  servoSorter.write(RandomTrashPosition);
-  delay(1000);
+  servoSorter.attach(9);
+  servoSorter.write(180); // palitan mo to ng 0 para umikot ng opposite
+  delay(3000); // palitan mo to kung need mo magdagdag or magbawas ng time ng pagikot ng servo
+  servoSorter.detach();
   //This code  will turn Motor A and B clockwise for 3 sec.
   analogWrite(motorAPin1, 255);
   analogWrite(motorAPin2, 0);
@@ -312,8 +314,10 @@ void SegregateRandomTrash(){
 
 // void function that will move both motors in the counter-clockwise direction (LEFT TRASHBIN)
 void SegregatePetBottles(){
-  servoSorter.write(PetBottlePosition);
-  delay(1000);
+  servoSorter.attach(9);
+  servoSorter.write(0); // palitan mo to ng 180 para umikot ng opposite
+  delay(3000); // palitan mo to kung need mo magdagdag or magbawas ng time ng pagikot ng servo
+  servoSorter.detach();
   //This code  will turn Motor A and B clockwise for 3 sec.
   analogWrite(motorAPin1, 255);
   analogWrite(motorAPin2, 0);
