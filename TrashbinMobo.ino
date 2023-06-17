@@ -163,14 +163,11 @@ void loop() {
   MagneticDoorValue = digitalRead(MagneticDoor);
 
   while (IsTrashBeingInserted && MagneticDoorValue == 1){
-    ReverseMotor();
-    delay(30000);
-
     int IR1State = digitalRead(IR1); 
     while (IR1State != 0){
       IR1State = digitalRead(IR1); 
       ForwardMotor();
-      delay(200); // change this to change how much 
+      delay(100); // palitan mo tong delay na to kasi eto ung time na iikot ung converyor belt tapos mag iistop siya.
       StopMotor();
       counter++;
       if (counter == 50){ // change this to stop motor.
@@ -303,11 +300,11 @@ void SegregateRandomTrash(){
   servoSorter.write(180); // palitan mo to ng 0 para umikot ng opposite
   delay(3000); // palitan mo to kung need mo magdagdag or magbawas ng time ng pagikot ng servo
   servoSorter.detach();
-  //This code  will turn Motor A and B clockwise for 3 sec.
+  //This code  will turn Motor A clockwise for 3 sec.
   analogWrite(motorAPin1, 255);
   analogWrite(motorAPin2, 0);
-  delay(3000); // change this to 
-  // This code will stop motor A and Motor B
+  delay(200); // palitan mo tong delay na to kasi eto ung time na iikot ung converyor belt tapos mag iistop siya.
+  // This code will stop motor A
   analogWrite(motorAPin1, 0);
   analogWrite(motorAPin2, 0);
 }
@@ -321,8 +318,8 @@ void SegregatePetBottles(){
   //This code  will turn Motor A and B clockwise for 3 sec.
   analogWrite(motorAPin1, 255);
   analogWrite(motorAPin2, 0);
-  delay(3000); // change this to 
-  // This code will stop motor A and Motor B
+  delay(200); // palitan mo tong delay na to kasi eto ung time na iikot ung converyor belt tapos mag iistop siya.
+  // This code will stop motor A
   analogWrite(motorAPin1, 0);
   analogWrite(motorAPin2, 0);
 }
@@ -391,10 +388,6 @@ void ShowBothTrashcanIsFull(){
   delay(1000);
 }
 
-void ReverseMotor(){
-  analogWrite(motorAPin1, 0);
-  analogWrite(motorAPin2, 255);
-}
 
 void ForwardMotor(){
   analogWrite(motorAPin1, 255);
