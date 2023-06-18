@@ -122,7 +122,7 @@ void loop() {
     while(true){
       ShowBothTrashcanIsFull();
       int PushBtnValue = digitalRead(PushButtonSwitch);
-      if(PushBtnValue == 1){
+      if(PushBtnValue == 0){
         digitalWrite(A0,LOW);
         digitalWrite(A1,LOW);
         noTone(buzzer); 
@@ -133,7 +133,7 @@ void loop() {
     while(true){
       ShowTrashcanForBottlesAreFull();
       int PushBtnValue = digitalRead(PushButtonSwitch);
-      if(PushBtnValue == 1){
+      if(PushBtnValue == 0){
         digitalWrite(A0,LOW);
         noTone(buzzer); 
         break;
@@ -143,7 +143,7 @@ void loop() {
     while(true){
       ShowTrashcanForRandomTrashAreFull();
       int PushBtnValue = digitalRead(PushButtonSwitch);
-      if(PushBtnValue == 1){
+      if(PushBtnValue == 0){
         digitalWrite(A1,LOW);
         noTone(buzzer); 
         break;
