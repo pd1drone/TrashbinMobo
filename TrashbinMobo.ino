@@ -5,6 +5,10 @@ MOTOR DRIVER OUT2 = 3
 
 IR SENSOR 1 (SENSOR FOR INSERTED TRASH) = 11 
 
+IR SENSOR 2 = 22
+IR SENSOR 3 = 23
+IR SENSOR 4 = 24
+
 left ultrasonic sensor
 trig pin = 4
 echo pin = 6
@@ -12,6 +16,10 @@ echo pin = 6
 right ultrasonic sensor
 trig pin = 7
 echo pin = 8
+
+panel ultrasonic sensor
+trig pin = 25
+echo pin = 26
 
 PROXIMITY SENSOR = 10
 
@@ -28,16 +36,10 @@ LED LEFT (Random trash trashcan) = A1
 
 LCD VIN = 5V
 LCD GND = GND
-LCD SDA = A4
-LCD SCL = A5
+LCD SDA = 20
+LCD SCL = 21
 
-ACTUAL PROTOTYPE TRASHBIN CONFIGURATION:
-LEFT TRASHBIN = RANDOM TRASH TRASHBIN
-RIGHT TRASHBIN = PET BOTTLE TRASHBIN
 
-MOVEMENT OF MOTORS CONFIGURATION:
-CLOCKWISE = FORWARD DIRECTION
-COUNTER-CLOCKWISE = REVERSE DIRECTION
 
 */
 
@@ -56,6 +58,9 @@ const int ProximitySensor = 10;
 
 // IR Sensors
 const int IR1 = 11;
+const int IR2 = 22;
+const int IR3 = 23;
+const int IR4 = 24;
 
 // left ultrasonic sensor for trashcan
 const int LeftTrigPin = 6;
@@ -64,6 +69,14 @@ const int LeftEchoPin = 4;
 // right ultrasonic sensor for trashcan
 const int RightTrigPin = 8;
 const int RightEchoPin = 7;
+
+const int PanelTrigPin = 25;
+const int PanelEchoPin = 26;
+
+
+long panelUltrasonicDuration;
+
+float panel = 0.0;
 
 const int PushButtonSwitch = 12;
 
@@ -98,11 +111,16 @@ void setup() {
   pinMode(motorAPin2, OUTPUT); // motor pin 2 -  3
   pinMode(ProximitySensor, INPUT); // proximity sensor - 10
   pinMode(IR1, INPUT); // ir sensor = 11
+  pinMode(IR2, INPUT); // ir sensor = 22
+  pinMode(IR3, INPUT); // ir sensor = 23
+  pinMode(IR4, INPUT); // ir sensor = 24
   pinMode(MagneticDoor, INPUT); // magneticdoor - 2
   pinMode(LeftTrigPin, OUTPUT);  // left trig pin = 4
   pinMode(LeftEchoPin, INPUT);  // left echo pin = 6
   pinMode(RightTrigPin, OUTPUT);  // right trig pin = 7
   pinMode(RightEchoPin, INPUT);  // right echo pin = 8
+  pinMode(PanelTrigPin, OUTPUT);  // left trig pin = 25
+  pinMode(PanelEchoPin, INPUT);  // left echo pin = 26
   pinMode(A0,OUTPUT); // right led A0
   pinMode(A1,OUTPUT); // left led A1
   pinMode(buzzer, OUTPUT); // Set buzzer - pin 9 as an output
@@ -168,11 +186,9 @@ void loop() {
   MagneticDoorValue = digitalRead(MagneticDoor);
 
   while (IsTrashBeingInserted && MagneticDoorValue == 0){
-    int IR1State = digitalRead(IR1); 
-    Serial.println("IR");
-    Serial.println(IR1State);
-    while (IR1State != 0){
-      IR1State = digitalRead(IR1); 
+    PanelUltrasonicSensor();
+    while (panel >= 4){
+      PanelUltrasonicSensor();
       ForwardMotor();
       tone(buzzer,1000);
       delay(200); // palitan mo tong delay na to kasi eto ung time na iikot ung converyor belt tapos mag iistop siya.
@@ -194,11 +210,17 @@ void loop() {
       counter = 0;
     }
 
-    // initialize and read Proximity Sensor state variable
-    int ProximitySensorState = digitalRead(ProximitySensor);
-    // Print Proximity Sensor state for testing
-    Serial.println(ProximitySensorState);
-    if (ProximitySensorState == 1){
+    
+    int IR1State = digitalRead(IR1); 
+    int IR2State = digitalRead(IR2); 
+    int IR3State = digitalRead(IR3); 
+    int IR4State = digitalRead(IR4); 
+
+    // // initialize and read Proximity Sensor state variable
+    // int ProximitySensorState = digitalRead(ProximitySensor);
+    // // Print Proximity Sensor state for testing
+    // Serial.println(ProximitySensorState);
+    if (IR1State == 1 && IR2State == 1 && IR3State == 1 && IR4State == 1){
       // Show message that pet bottle has been inserted
       ShowPetBottleHasBeenDetected();
       // Show Segragating message in the LCD
@@ -415,4 +437,16 @@ void StopMotor(){
   // This code will stop motor A and Motor B
   analogWrite(motorAPin1, 0);
   analogWrite(motorAPin2, 0);
+}
+
+void PanelUltrasonicSensor() {
+  digitalWrite(PanelTrigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(PanelTrigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(PanelTrigPin, LOW);
+  panelUltrasonicDuration = pulseIn(PanelEchoPin, HIGH);
+  float paneldata = panelUltrasonicDuration * 0.0133 / 2;
+  panel = paneldata;
+  Serial.println(panel);
 }

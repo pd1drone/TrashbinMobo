@@ -18,8 +18,7 @@ void setup() {
 }
 
 void loop(){
-    int IR1State = digitalRead(IR1); 
-    Serial.println(IR1State);
+    PanelUltrasonicSensor();
 }
 
 
