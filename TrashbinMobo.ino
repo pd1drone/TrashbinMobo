@@ -58,12 +58,12 @@ const int ProximitySensor = 10;
 const int IR1 = 11;
 
 // left ultrasonic sensor for trashcan
-const int LeftTrigPin = 4;
-const int LeftEchoPin = 6;
+const int LeftTrigPin = 6;
+const int LeftEchoPin = 4;
 
 // right ultrasonic sensor for trashcan
-const int RightTrigPin = 7;
-const int RightEchoPin = 8;
+const int RightTrigPin = 8;
+const int RightEchoPin = 7;
 
 const int PushButtonSwitch = 12;
 
@@ -79,7 +79,7 @@ float right = 0.0;
 
 Servo servoSorter;
 
-int PetBottlePosition = 90; // eto babaguhin mo pre para 180 na movement ni servo eto dapat gagalaw sya papunta sa petbottle bin
+int PetBottlePosition = 180; // eto babaguhin mo pre para 180 na movement ni servo eto dapat gagalaw sya papunta sa petbottle bin
 int RandomTrashPosition = 0; // eto babaguhin mo pre para 180 na movement ni servo eto dapat gagalaw sya papunta sa random bin
 
 bool IsTrashBeingInserted = false;
@@ -117,8 +117,11 @@ void loop() {
   int MagneticDoorValue = digitalRead(MagneticDoor);
   LeftUltrasonicSensor();
   RightUltrasonicSensor();
+  
+    int IR1State = digitalRead(IR1); 
+    Serial.println(IR1State);
 
-  if (right <= 12.0 && left <= 12.0){
+  if (right <= 3.0 && left <= 3.0){
     while(true){
       ShowBothTrashcanIsFull();
       int PushBtnValue = digitalRead(PushButtonSwitch);
@@ -129,7 +132,7 @@ void loop() {
         break;
       }
     }
-  }else if (right <= 12.0){
+  }else if (right <= 3.0){
     while(true){
       ShowTrashcanForBottlesAreFull();
       int PushBtnValue = digitalRead(PushButtonSwitch);
@@ -139,7 +142,7 @@ void loop() {
         break;
       }
     }
-  }else if (left <= 12.0){
+  }else if (left <= 3.0){
     while(true){
       ShowTrashcanForRandomTrashAreFull();
       int PushBtnValue = digitalRead(PushButtonSwitch);
@@ -153,7 +156,9 @@ void loop() {
     ShowDefaultLCDMessage();
   }
 
-  if (MagneticDoorValue == 0){
+  Serial.println(MagneticDoorValue);
+
+  if (MagneticDoorValue == 1){
     IsTrashBeingInserted = true;
     // Show Message that Trash has been Inserted
     ShowTrashInsertedMessage();
@@ -162,13 +167,18 @@ void loop() {
 
   MagneticDoorValue = digitalRead(MagneticDoor);
 
-  while (IsTrashBeingInserted && MagneticDoorValue == 1){
+  while (IsTrashBeingInserted && MagneticDoorValue == 0){
     int IR1State = digitalRead(IR1); 
+    Serial.println("IR");
+    Serial.println(IR1State);
     while (IR1State != 0){
       IR1State = digitalRead(IR1); 
       ForwardMotor();
-      delay(100); // palitan mo tong delay na to kasi eto ung time na iikot ung converyor belt tapos mag iistop siya.
+      tone(buzzer,1000);
+      delay(200); // palitan mo tong delay na to kasi eto ung time na iikot ung converyor belt tapos mag iistop siya.
       StopMotor();
+      noTone(buzzer); 
+      delay(1000);
       counter++;
       if (counter == 50){ // change this to stop motor.
         break;
@@ -217,7 +227,7 @@ void LeftUltrasonicSensor() {
   Leftduration = pulseIn(LeftEchoPin, HIGH);
   float leftdata = Leftduration * 0.0133 / 2;
   left = leftdata;
-
+  Serial.println(left);
 }
 
 void RightUltrasonicSensor() {
@@ -229,6 +239,7 @@ void RightUltrasonicSensor() {
   Rightduration = pulseIn(RightEchoPin, HIGH);
   float rightdata = Rightduration * 0.0133 / 2;
   right = rightdata;
+  Serial.println(right);
 }
 
 // void function for showing trash has been inserted Message in the LCD
@@ -237,7 +248,7 @@ void ShowTrashInsertedMessage(){
   lcd.clear();
   lcd.setCursor(1, 0);         
   lcd.print("Trash Inserted");
-  delay(5000);
+  delay(3000);
 }
 
 // void function for showing pet bottle has been detected Message in the LCD
@@ -247,7 +258,7 @@ void ShowPetBottleHasBeenDetected(){
   lcd.print("Pet bottle");      
   lcd.setCursor(2, 1);        
   lcd.print("is detected"); 
-  delay(2000);
+  delay(1000);
 }
 
 // void function for showing random trash has been detected Message in the LCD
@@ -257,7 +268,7 @@ void ShowRandomTrashHasbeenDetected(){
   lcd.print("Random trash");      
   lcd.setCursor(2, 1);        
   lcd.print("is detected"); 
-  delay(2000);
+  delay(1000);
 }
 
 // void function for showing Segragating Message in the LCD
@@ -265,7 +276,7 @@ void ShowSegregatingMessage(){
   lcd.clear();
   lcd.setCursor(0, 0);         
   lcd.print("Segregating.....");
-  delay(3000);
+  delay(1000);
 }
 
 // void function for showing the segregation has been completed Message in the LCD
@@ -302,11 +313,11 @@ void SegregateRandomTrash(){
   // servoSorter.detach();
 
   servoSorter.write(RandomTrashPosition);
-  delay(4000);
+  delay(1500);
   //This code  will turn Motor A clockwise for 3 sec.
   analogWrite(motorAPin1, 255);
   analogWrite(motorAPin2, 0);
-  delay(200); // palitan mo tong delay na to kasi eto ung time na iikot ung converyor belt tapos mag iistop siya.
+  delay(500); // palitan mo tong delay na to kasi eto ung time na iikot ung converyor belt tapos mag iistop siya.
   // This code will stop motor A
   analogWrite(motorAPin1, 0);
   analogWrite(motorAPin2, 0);
@@ -320,11 +331,11 @@ void SegregatePetBottles(){
   // servoSorter.detach();
 
   servoSorter.write(PetBottlePosition);
-  delay(4000);
+  delay(1500);
   //This code  will turn Motor A and B clockwise for 3 sec.
   analogWrite(motorAPin1, 255);
   analogWrite(motorAPin2, 0);
-  delay(200); // palitan mo tong delay na to kasi eto ung time na iikot ung converyor belt tapos mag iistop siya.
+  delay(500); // palitan mo tong delay na to kasi eto ung time na iikot ung converyor belt tapos mag iistop siya.
   // This code will stop motor A
   analogWrite(motorAPin1, 0);
   analogWrite(motorAPin2, 0);
