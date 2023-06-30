@@ -51,7 +51,7 @@ const int motorAPin1  = 5;
 const int motorAPin2  = 3;
 
 // Magnetic door
-const int MagneticDoor = 2;
+const int MagneticDoor = 53;
 
 // Proximity Sensor
 const int ProximitySensor = 10;
@@ -114,7 +114,7 @@ void setup() {
   pinMode(IR2, INPUT); // ir sensor = 22
   pinMode(IR3, INPUT); // ir sensor = 23
   pinMode(IR4, INPUT); // ir sensor = 24
-  pinMode(MagneticDoor, INPUT); // magneticdoor - 2
+  pinMode(MagneticDoor, INPUT_PULLUP); // magneticdoor - 2
   pinMode(LeftTrigPin, OUTPUT);  // left trig pin = 4
   pinMode(LeftEchoPin, INPUT);  // left echo pin = 6
   pinMode(RightTrigPin, OUTPUT);  // right trig pin = 7
@@ -139,7 +139,7 @@ void loop() {
     int IR1State = digitalRead(IR1); 
     Serial.println(IR1State);
 
-  if (right <= 3.0 && left <= 3.0){
+  if (right <= 6.0 && left <= 6.0){
     while(true){
       ShowBothTrashcanIsFull();
       int PushBtnValue = digitalRead(PushButtonSwitch);
@@ -150,7 +150,7 @@ void loop() {
         break;
       }
     }
-  }else if (right <= 3.0){
+  }else if (right <= 6.0){
     while(true){
       ShowTrashcanForBottlesAreFull();
       int PushBtnValue = digitalRead(PushButtonSwitch);
@@ -160,7 +160,7 @@ void loop() {
         break;
       }
     }
-  }else if (left <= 3.0){
+  }else if (left <= 6.0){
     while(true){
       ShowTrashcanForRandomTrashAreFull();
       int PushBtnValue = digitalRead(PushButtonSwitch);
@@ -187,7 +187,7 @@ void loop() {
 
   while (IsTrashBeingInserted && MagneticDoorValue == 0){
     PanelUltrasonicSensor();
-    while (panel >= 4){
+    while (panel >= 5.0){
       PanelUltrasonicSensor();
       ForwardMotor();
       tone(buzzer,1000);
@@ -196,13 +196,18 @@ void loop() {
       noTone(buzzer); 
       delay(1000);
       counter++;
-      if (counter == 50){ // change this to stop motor.
+      if (counter == 20){ // change this to stop motor.
         break;
       }
     }
+    ForwardMotor();
+    tone(buzzer,1000);
+    delay(300); // palitan mo tong delay na to kasi eto ung time na iikot ung converyor belt tapos mag iistop siya.
+    StopMotor();
+    noTone(buzzer); 
 
     // this means that there is no more trash to be separated
-    if (counter == 50){
+    if (counter == 20){
       ShowSegregationCompletedMessage();
       IsTrashBeingInserted = false;
       break;
